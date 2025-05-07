@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom Scrap Metal Calculator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    .scrap-item {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .scrap-item input {
+      flex: 1;
+      padding: 8px;
+    }
+
+    .scrap-item button {
+      background: red;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #results {
+      margin-top: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    button.add-btn, button.calc-btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button.add-btn {
+      background: #2d89ef;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button.calc-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Scrap Metal Calculator</h2>
+  <div id="scrapList">
+    <!-- Scrap item fields will go here -->
+  </div>
+
+  <button class="add-btn" onclick="addScrapItem()">+ Add Scrap Type</button>
+  <button class="calc-btn" onclick="calculateTotal()">Calculate Total Value</button>
+
+  <div id="results"></div>
+</div>
+
+<script>
+  function addScrapItem(name = "", price = "", weight = "") {
+    const div = document.createElement("div");
+    div.className = "scrap-item";
+
+    div.innerHTML = `
+      <input type="text" placeholder="Scrap Name" value="${name}">
+      <input type="number" placeholder="Price per lb ($)" value="${price}">
+      <input type="number" placeholder="Weight (lb)" value="${weight}">
+      <button onclick="this.parentElement.remove()">X</button>
+    `;
+
+    document.getElementById("scrapList").appendChild(div);
+  }
+
+  function calculateTotal() {
+    const items = document.querySelectorAll(".scrap-item");
+    let total = 0;
+    let summary = "";
+
+    items.forEach(item => {
+      const inputs = item.querySelectorAll("input");
+      const name = inputs[0].value || "Unknown";
+      const price = parseFloat(inputs[1].value);
+      const weight = parseFloat(inputs[2].value);
+
+      if (!isNaN(price) && !isNaN(weight)) {
+        const value = price * weight;
+        total += value;
+        summary += `${name}: $${value.toFixed(2)}<br>`;
+      }
+    });
+
+    summary += `<hr>Total Value: <strong>$${total.toFixed(2)}</strong>`;
+    document.getElementById("results").innerHTML = summary;
+  }
+
+  // Add a default row on page load
+  addScrapItem("Copper", 2.95, 10);
+</script>
+
+</body>
+</html>
