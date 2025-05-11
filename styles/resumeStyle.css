@@ -1,0 +1,54 @@
+
+header{
+    background-color: #f5f9fb;
+    padding: 20px;
+    text-align: center;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    border-bottom: 2px solid #050505;
+    
+}
+
+header div{
+    background-color: rgb(255, 255, 255);
+    width: 50%;
+    height: 80px;
+    padding-left: 5px;
+    padding-top: 2px;
+    text-align: left;
+    font-size: 0.8em;
+    border-radius: 10px;
+    border: solid 3px #070707;
+}
+header #job{
+    padding-bottom: 2px;
+}
+#projects{
+    background-color: #dbd7d7;
+    padding: 20px;
+    text-align: center;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    border-bottom: 2px solid #ccc;  
+}
+ #projects div{
+    background-color: #fcfeff;
+  
+    padding: 20px;
+    text-align: center;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    border-bottom: 2px solid #ccc;
+    border: solid 3px #070707;
+    border-radius: 10px;
+    margin: 10px;
+}
+#education{
+    background-color: #dbd7d7;
+    padding: 20px;
+    text-align: center;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    border-bottom: 2px solid #ccc;  
+}
+
