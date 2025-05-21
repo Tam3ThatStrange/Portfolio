@@ -70,7 +70,31 @@
       border: none;
       border-radius: 5px;
     }
+    header {
+      background: #333;
+      color: white;
+      padding: 10px 0;
+      text-align: center;
+    }
+    nav a {
+      color: black;
+      
+      display: inline;
+      background-color: lightgray;
+      text-shadow: #28a745;
+      border: solid 1px #fff;
+      border-radius: 90%;
+      text-decoration: none;
+      margin: 0 15px;
+    }
   </style>
+
+  <header>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="#contact">contact</a>
+    </nav>
+  </header>
 </head>
 <body>
 
@@ -85,6 +109,16 @@
 
   <div id="results"></div>
 </div>
+
+
+  <section id="contact">
+    <h2>Contact Us</h2>
+      <p><strong>Address:</strong> 1234 Scrap Lane, Brant, MI 48614</p>
+  
+      <p><strong>Phone:</strong> (989)316-5740<br/>
+         <strong>Email:</strong> pussehl2010@yahoo.com</p>
+      <a href="mailto:pussehl2010@yahoo.com" class="contact-btn">Email Us Now</a>
+    </section>
 
 <script>
   function addScrapItem(name = "", price = "", weight = "") {
