@@ -1,54 +1,115 @@
-
-header{
-    background-color: #f5f9fb;
-    padding: 20px;
-    text-align: center;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    border-bottom: 2px solid #050505;
-    
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-header div{
-    background-color: rgb(255, 255, 255);
-    width: 50%;
-    height: 80px;
-    padding-left: 5px;
-    padding-top: 2px;
-    text-align: left;
-    font-size: 0.8em;
-    border-radius: 10px;
-    border: solid 3px #070707;
-}
-header #job{
-    padding-bottom: 2px;
-}
-#projects{
-    background-color: #dbd7d7;
-    padding: 20px;
-    text-align: center;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    border-bottom: 2px solid #ccc;  
-}
- #projects div{
-    background-color: #fcfeff;
-  
-    padding: 20px;
-    text-align: center;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    border-bottom: 2px solid #ccc;
-    border: solid 3px #070707;
-    border-radius: 10px;
-    margin: 10px;
-}
-#education{
-    background-color: #dbd7d7;
-    padding: 20px;
-    text-align: center;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    border-bottom: 2px solid #ccc;  
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+  line-height: 1.6;
+  padding: 20px;
 }
 
+/* Header */
+header {
+  background-color: #2c3e50;
+  color: #fff;
+  padding: 30px 20px;
+  text-align: center;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+}
+
+#job {
+  font-style: italic;
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+
+#contact p {
+  margin: 5px 0;
+}
+
+/* Section Headings */
+section h2 {
+  font-size: 2em;
+  border-bottom: 2px solid #333;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  color: #2c3e50;
+}
+
+/* Project Cards */
+.project-card {
+  background: #fff;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-left: 6px solid #2980b9;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.project-card h4 {
+  margin-bottom: 10px;
+  color: #2980b9;
+}
+
+.project-card p {
+  margin-bottom: 10px;
+}
+
+.project-card a.btn {
+  display: inline-block;
+  padding: 8px 12px;
+  background-color: #2980b9;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.project-card a.btn:hover {
+  background-color: #1f6390;
+}
+
+/* Udemy Links */
+.udemy {
+  background-color: #fff;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.udemy a {
+  display: block;
+  margin-top: 10px;
+  color: #2c3e50;
+  text-decoration: none;
+}
+
+.udemy a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  header h1 {
+    font-size: 2em;
+  }
+
+  .project-card {
+    padding: 15px;
+  }
+}
