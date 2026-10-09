@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f3f5f8">
+  <title>Invoice Builder</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182230;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --soft: #f8fafc;
+      --accent: #3157d5;
+      --accent-dark: #2445b4;
+      --page-width: 1000px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #f3f5f8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      padding: 40px 20px 56px;
+    }
+
+    button, input, textarea, select { font: inherit; }
+
+    .toolbar {
+      width: min(var(--page-width), 100%);
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .toolbar-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+
+    .toolbar-actions { display: flex; gap: 10px; }
+
+    .button {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, transform .15s ease;
+    }
+
+    .button:hover { border-color: #b8c0cc; background: #fbfcfe; }
+    .button:active { transform: translateY(1px); }
+    .button-primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .button-primary:hover { border-color: var(--accent-dark); background: var(--accent-dark); }
+    .button svg { width: 16px; height: 16px; }
+
+    .invoice {
+      width: min(var(--page-width), 100%);
+      min-height: 980px;
+      margin: 0 auto;
+      padding: 58px 64px 52px;
+      border: 1px solid #e8ebf0;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 12px 35px rgb(16 24 40 / 7%);
+    }
+
+    .invoice-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 38px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand-block { width: min(360px, 55%); }
+    .invoice-title { margin: 0 0 24px; color: var(--accent); font-size: 38px; line-height: 1; letter-spacing: -.045em; }
+    .sender-name { font-size: 16px; font-weight: 700; }
+    .sender-details { margin-top: 6px; }
+
+    .meta-block { width: 250px; padding-top: 1px; }
+    .meta-line { display: grid; grid-template-columns: 104px 1fr; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .meta-line label, .field-label, .section-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      outline: none;
+      background: transparent;
+      color: var(--ink);
+      transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+
+    input:hover, textarea:hover, select:hover { border-color: #e1e6ef; }
+    input:focus, textarea:focus, select:focus {
+      border-color: #9aadef;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgb(49 87 213 / 10%);
+    }
+
+    input { min-height: 34px; padding: 5px 7px; }
+    textarea { min-height: 74px; padding: 8px; resize: vertical; line-height: 1.5; }
+    input::placeholder, textarea::placeholder { color: #98a2b3; }
+    input[type="date"] { font-size: 13px; }
+
+    .text-stack { display: grid; gap: 2px; }
+    .text-stack input { min-height: 25px; padding: 3px 7px; }
+    .text-stack input:first-child { font-size: 14px; font-weight: 700; }
+    .text-stack textarea { min-height: 70px; }
+
+    .bill-section { display: flex; justify-content: space-between; gap: 40px; padding: 32px 0 36px; }
+    .bill-to { width: min(340px, 55%); }
+    .section-label { display: block; margin-bottom: 12px; }
+    .customer-fields { display: grid; gap: 4px; }
+    .customer-fields input:first-child { font-weight: 700; }
+    .currency-field { width: 180px; }
+    .currency-field select { margin-top: 8px; min-height: 38px; padding: 5px 9px; border-color: var(--line); background-color: #fff; }
+
+    .items-section { margin-top: 0; }
+    .items-header, .service-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 90px 126px 126px 40px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .items-header {
+      min-height: 42px;
+      padding: 0 10px;
+      border-radius: 6px 6px 0 0;
+      background: #f4f6fb;
+      color: #475467;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .items-header span:not(:first-child) { text-align: right; }
+    .items-header span:last-child { text-align: center; }
+    .service-row { min-height: 64px; padding: 9px 4px 9px 3px; border-bottom: 1px solid var(--line); }
+    .service-row input { min-height: 38px; padding: 7px; }
+    .service-row input:not([type="text"]) { text-align: right; }
+    .service-row .description { font-weight: 600; }
+    .line-total { padding: 0 6px; text-align: right; font-size: 14px; font-weight: 650; white-space: nowrap; }
+    .remove-service {
+      width: 34px;
+      height: 34px;
+      display: inline-grid;
+      place-items: center;
+      justify-self: center;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: #98a2b3;
+      cursor: pointer;
+    }
+    .remove-service:hover { background: #fff1f0; color: #d92d20; }
+    .remove-service svg { width: 17px; height: 17px; }
+
+    .add-service { margin-top: 14px; padding-inline: 11px; border-color: transparent; color: var(--accent); }
+    .add-service:hover { border-color: #dfe5fa; background: #f7f8ff; }
+    .add-service svg { width: 15px; height: 15px; }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 48px;
+      margin-top: 38px;
+    }
+
+    .notes-area textarea { margin-top: 7px; }
+    .totals { padding-top: 2px; }
+    .total-line { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 13px; color: #475467; font-size: 14px; }
+    .total-line strong { color: var(--ink); font-weight: 650; }
+    .tax-entry { display: flex; align-items: center; gap: 6px; }
+    .tax-entry input { width: 55px; min-height: 28px; padding: 3px 5px; text-align: right; }
+    .grand-total {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 18px;
+      padding: 17px 0 0;
+      border-top: 1px solid #cfd5df;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 750;
+    }
+
+    .footer-note { margin-top: 52px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; text-align: center; }
+    .footer-note input { width: min(420px, 100%); text-align: center; }
+
+    @media (max-width: 720px) {
+      body { padding: 20px 10px 32px; }
+      .toolbar { align-items: flex-start; }
+      .toolbar-label { padding-top: 12px; }
+      .button { min-height: 40px; padding: 0 11px; }
+      .invoice { min-height: 0; padding: 34px 24px 30px; border-radius: 9px; }
+      .invoice-header { gap: 18px; }
+      .invoice-title { font-size: 32px; }
+      .meta-block { width: 225px; }
+      .meta-line { grid-template-columns: 88px 1fr; gap: 4px; }
+      .bill-section { gap: 20px; }
+      .items-header, .service-row { grid-template-columns: minmax(0, 1fr) 58px 86px 92px 32px; gap: 5px; }
+      .items-header { padding: 0 7px; font-size: 9px; letter-spacing: .04em; }
+      .service-row { padding-right: 0; }
+      .service-row input { padding: 5px 3px; font-size: 13px; }
+      .line-total { padding: 0 2px; font-size: 12px; }
+      .remove-service { width: 28px; }
+      .bottom-grid { grid-template-columns: minmax(0, 1fr) 235px; gap: 22px; }
+    }
+
+    @media (max-width: 540px) {
+      .toolbar { flex-direction: column; gap: 10px; }
+      .toolbar-label { padding-top: 0; }
+      .toolbar-actions { width: 100%; }
+      .toolbar-actions { flex-wrap: wrap; }
+      .toolbar-actions .button { flex: 1 1 135px; }
+      .invoice { padding: 28px 16px; }
+      .invoice-header { flex-direction: column; }
+      .brand-block, .meta-block { width: 100%; }
+      .invoice-title { margin-bottom: 18px; }
+      .meta-block { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
+      .meta-line { grid-template-columns: 1fr; gap: 1px; margin-bottom: 7px; }
+      .meta-line label { padding-left: 7px; }
+      .bill-section { padding: 25px 0; }
+      .bill-to { width: 65%; }
+      .currency-field { width: 120px; }
+      .items-section { margin-inline: -7px; }
+      .items-header, .service-row { grid-template-columns: minmax(88px, 1fr) 48px 67px 77px 25px; gap: 2px; }
+      .items-header { padding: 0 4px; font-size: 8px; }
+      .service-row { padding-left: 0; }
+      .service-row input { font-size: 12px; }
+      .line-total { font-size: 11px; }
+      .remove-service { width: 24px; height: 30px; }
+      .remove-service svg { width: 14px; height: 14px; }
+      .bottom-grid { grid-template-columns: 1fr; gap: 28px; margin-top: 25px; }
+      .totals { width: min(310px, 100%); justify-self: end; }
+      .footer-note { margin-top: 38px; }
+    }
+
+    @media print {
+      @page { size: letter; margin: 12mm; }
+      :root { background: #fff; }
+      body { padding: 0; background: #fff; }
+      .toolbar, .add-service, .remove-service { display: none !important; }
+      .invoice {
+        width: 100%;
+        min-height: 0;
+        margin: 0;
+        padding: 14px 18px;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      input, textarea, select {
+        border-color: transparent !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: #182230 !important;
+        appearance: none;
+      }
+      textarea { resize: none; }
+      .service-row, .bottom-grid, .invoice-header, .bill-section { break-inside: avoid; }
+      .items-header { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .service-row { min-height: 51px; }
+      .footer-note { margin-top: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar" aria-label="Invoice actions">
+    <div class="toolbar-label">INVOICE BUILDER</div>
+    <div class="toolbar-actions">
+      <button class="button" id="add-service-top" type="button">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Add service
+      </button>
+      <button class="button" id="download-word" type="button">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 2.75h6l4 4v10.5H5a1 1 0 0 1-1-1V3.75a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M11 2.75v4h4M6.25 10.25l1.25 4 1.25-4 1.25 4 1.25-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download Word
+      </button>
+      <button class="button button-primary" id="download-pdf" type="button">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3v9m0 0 3-3m-3 3L7 9m-3 4v3.25c0 .41.34.75.75.75h10.5c.41 0 .75-.34.75-.75V13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Download PDF
+      </button>
+    </div>
+  </div>
+
+  <main class="invoice" id="invoice">
+    <header class="invoice-header">
+      <section class="brand-block" aria-label="Your business details">
+        <h1 class="invoice-title">INVOICE</h1>
+        <div class="text-stack">
+          <input class="sender-name" type="text" name="business-name" placeholder="Your business name" aria-label="Your business name" required>
+          <input type="text" name="business-email" placeholder="you@yourbusiness.com" aria-label="Your business email">
+          <input type="text" name="business-phone" placeholder="Phone number" aria-label="Your business phone">
+          <textarea name="business-address" placeholder="Business address" aria-label="Your business address"></textarea>
+        </div>
+      </section>
+      <section class="meta-block" aria-label="Invoice details">
+        <div class="meta-line">
+          <label for="invoice-number">Invoice #</label>
+          <input id="invoice-number" type="text" required aria-label="Invoice number">
+        </div>
+        <div class="meta-line">
+          <label for="invoice-date">Issue date</label>
+          <input id="invoice-date" type="date" required aria-label="Issue date">
+        </div>
+        <div class="meta-line">
+          <label for="due-date">Due date</label>
+          <input id="due-date" type="date" required aria-label="Due date">
+        </div>
+      </section>
+    </header>
+
+    <section class="bill-section">
+      <div class="bill-to">
+        <span class="section-label">Bill to</span>
+        <div class="customer-fields">
+          <input type="text" name="customer-name" placeholder="Customer or company name" required aria-label="Customer or company name">
+          <input type="email" name="customer-email" placeholder="Customer email" aria-label="Customer email">
+          <input type="text" name="customer-phone" placeholder="Phone number" aria-label="Customer phone">
+          <textarea name="customer-address" placeholder="Billing address" aria-label="Customer billing address"></textarea>
+        </div>
+      </div>
+      <div class="currency-field">
+        <label class="field-label" for="currency">Currency</label>
+        <select id="currency" aria-label="Invoice currency">
+          <option value="USD">USD — US Dollar</option>
+          <option value="CAD">CAD — Canadian Dollar</option>
+          <option value="EUR">EUR — Euro</option>
+          <option value="GBP">GBP — British Pound</option>
+          <option value="AUD">AUD — Australian Dollar</option>
+          <option value="NZD">NZD — New Zealand Dollar</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="items-section" aria-label="Services">
+      <div class="items-header" aria-hidden="true">
+        <span>Service description</span>
+        <span>Qty</span>
+        <span>Rate</span>
+        <span>Amount</span>
+        <span></span>
+      </div>
+      <div id="service-rows"></div>
+      <button class="button add-service" id="add-service" type="button">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Add a service
+      </button>
+    </section>
+
+    <section class="bottom-grid">
+      <div class="notes-area">
+        <label class="field-label" for="notes">Notes</label>
+        <textarea id="notes" placeholder="Add a note for your customer, such as payment instructions or a thank you."></textarea>
+      </div>
+      <div class="totals" aria-live="polite">
+        <div class="total-line"><span>Subtotal</span><strong id="subtotal">$0.00</strong></div>
+        <div class="total-line">
+          <label for="tax-rate">Tax</label>
+          <span class="tax-entry"><input id="tax-rate" type="number" min="0" max="100" step="0.01" value="0" aria-label="Tax percentage"><span>%</span><strong id="tax-amount">$0.00</strong></span>
+        </div>
+        <div class="grand-total"><span>Total due</span><span id="total">$0.00</span></div>
+      </div>
+    </section>
+
+    <footer class="footer-note">
+      <input type="text" name="footer-message" value="Thank you for your business!" aria-label="Invoice footer message">
+    </footer>
+  </main>
+
+  <template id="service-template">
+    <div class="service-row">
+      <input class="description" type="text" placeholder="Describe the service provided" aria-label="Service description" required>
+      <input class="quantity" type="number" min="0" step="0.01" value="1" aria-label="Service quantity" required>
+      <input class="rate" type="number" min="0" step="0.01" placeholder="0.00" aria-label="Rate" required>
+      <output class="line-total">$0.00</output>
+      <button class="remove-service" type="button" aria-label="Remove service">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4.5 6h11M8 6V4.5h4V6m-6.5 0 .6 9.25c.05.7.63 1.25 1.33 1.25h5.14c.7 0 1.28-.55 1.33-1.25L14.5 6M8.25 8.5v5.25m3.5-5.25v5.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </template>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+  <script>
+    const rowsContainer = document.getElementById("service-rows");
+    const serviceTemplate = document.getElementById("service-template");
+    const currencySelect = document.getElementById("currency");
+
+    function money(amount) {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: currencySelect.value
+      }).format(amount);
+    }
+
+    function invoiceData() {
+      const value = (selector) => document.querySelector(selector).value.trim();
+      const fields = document.querySelectorAll("#invoice input[required], #invoice .description[required]");
+      for (const field of fields) {
+        if (!field.checkValidity() || !field.value.trim()) {
+          field.focus();
+          field.reportValidity();
+          return null;
+        }
+      }
+
+      const services = [...rowsContainer.querySelectorAll(".service-row")].map((row) => {
+        const quantity = Number(row.querySelector(".quantity").value);
+        const rate = Number(row.querySelector(".rate").value);
+        return {
+          description: row.querySelector(".description").value.trim(),
+          quantity,
+          rate,
+          amount: quantity * rate
+        };
+      });
+      const subtotal = services.reduce((sum, service) => sum + service.amount, 0);
+      const taxRate = Math.min(100, Math.max(0, Number(document.getElementById("tax-rate").value) || 0));
+      const tax = subtotal * taxRate / 100;
+      return {
+        businessName: value('[name="business-name"]'),
+        businessEmail: value('[name="business-email"]'),
+        businessPhone: value('[name="business-phone"]'),
+        businessAddress: value('[name="business-address"]'),
+        invoiceNumber: value("#invoice-number"),
+        issueDate: value("#invoice-date"),
+        dueDate: value("#due-date"),
+        customerName: value('[name="customer-name"]'),
+        customerEmail: value('[name="customer-email"]'),
+        customerPhone: value('[name="customer-phone"]'),
+        customerAddress: value('[name="customer-address"]'),
+        currency: currencySelect.value,
+        services,
+        subtotal,
+        taxRate,
+        tax,
+        total: subtotal + tax,
+        notes: value("#notes"),
+        footer: value('[name="footer-message"]')
+      };
+    }
+
+    function formattedDate(date) {
+      if (!date) return "";
+      return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" })
+        .format(new Date(`${date}T12:00:00`));
+    }
+
+    function fileName(data, extension) {
+      const invoiceNumber = data.invoiceNumber.replace(/[<>:"/\\|?*\x00-\x1F]/g, "-");
+      return `Invoice-${invoiceNumber}.${extension}`;
+    }
+
+    function exportPdf(data) {
+      if (!window.jspdf?.jsPDF) throw new Error("The PDF export library did not load. Check your internet connection and try again.");
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: "pt", format: "letter" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const left = 48;
+      const right = pageWidth - 48;
+      const usableWidth = right - left;
+      const blue = [49, 87, 213];
+      const ink = [24, 34, 48];
+      const muted = [102, 112, 133];
+      const line = [228, 231, 236];
+      let y = 54;
+
+      const text = (content, x, top, size, color = ink, weight = "normal", options = {}) => {
+        pdf.setFont("helvetica", weight);
+        pdf.setFontSize(size);
+        pdf.setTextColor(...color);
+        pdf.text(String(content), x, top, options);
+      };
+      const rule = (top) => {
+        pdf.setDrawColor(...line);
+        pdf.setLineWidth(0.7);
+        pdf.line(left, top, right, top);
+      };
+      const wrapped = (content, width, size = 10) => {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(size);
+        return content ? pdf.splitTextToSize(content, width) : [];
+      };
+
+      text("INVOICE", left, y, 28, blue, "bold");
+      text(data.businessName, left, y + 28, 12, ink, "bold");
+      let senderY = y + 45;
+      for (const detail of [data.businessEmail, data.businessPhone, ...data.businessAddress.split(/\r?\n/)].filter(Boolean)) {
+        text(detail, left, senderY, 9, muted);
+        senderY += 13;
+      }
+
+      const metaX = right - 180;
+      const metaRows = [
+        ["INVOICE NUMBER", data.invoiceNumber],
+        ["ISSUE DATE", formattedDate(data.issueDate)],
+        ["DUE DATE", formattedDate(data.dueDate)]
+      ];
+      let metaY = y + 4;
+      metaRows.forEach(([label, value]) => {
+        text(label, metaX, metaY, 8, muted, "bold");
+        text(value, right, metaY + 15, 10, ink, "bold", { align: "right" });
+        metaY += 40;
+      });
+      y = Math.max(senderY, metaY) + 20;
+      rule(y);
+
+      y += 27;
+      text("BILL TO", left, y, 8, muted, "bold");
+      text("CURRENCY", right - 150, y, 8, muted, "bold");
+      y += 19;
+      text(data.customerName, left, y, 11, ink, "bold");
+      text(data.currency, right - 150, y, 10, ink, "bold");
+      y += 16;
+      const customerDetails = [data.customerEmail, data.customerPhone, ...data.customerAddress.split(/\r?\n/)].filter(Boolean);
+      customerDetails.forEach((detail) => {
+        text(detail, left, y, 9, muted);
+        y += 13;
+      });
+      y += 19;
+
+      const columns = { description: left + 10, quantity: left + 355, rate: left + 420, amount: right - 10 };
+      const drawTableHeader = () => {
+        pdf.setFillColor(244, 246, 251);
+        pdf.roundedRect(left, y, usableWidth, 27, 4, 4, "F");
+        text("SERVICE DESCRIPTION", columns.description, y + 17, 8, muted, "bold");
+        text("QTY", columns.quantity, y + 17, 8, muted, "bold", { align: "right" });
+        text("RATE", columns.rate, y + 17, 8, muted, "bold", { align: "right" });
+        text("AMOUNT", columns.amount, y + 17, 8, muted, "bold", { align: "right" });
+        y += 27;
+      };
+      drawTableHeader();
+
+      data.services.forEach((service) => {
+        const descriptionLines = wrapped(service.description, 300, 10);
+        const rowHeight = Math.max(34, descriptionLines.length * 13 + 18);
+        if (y + rowHeight > pageHeight - 90) {
+          pdf.addPage();
+          y = 48;
+          drawTableHeader();
+        }
+        descriptionLines.forEach((part, index) => text(part, columns.description, y + 20 + index * 13, 10));
+        text(service.quantity, columns.quantity, y + 20, 9, ink, "normal", { align: "right" });
+        text(money(service.rate), columns.rate, y + 20, 9, ink, "normal", { align: "right" });
+        text(money(service.amount), columns.amount, y + 20, 9, ink, "normal", { align: "right" });
+        y += rowHeight;
+        rule(y);
+      });
+
+      const totalsHeight = 100 + (data.notes ? 55 : 0);
+      if (y + totalsHeight > pageHeight - 55) {
+        pdf.addPage();
+        y = 54;
+      }
+      y += 22;
+      const totalLabelX = right - 170;
+      text("Subtotal", totalLabelX, y, 10, muted);
+      text(money(data.subtotal), right, y, 10, ink, "bold", { align: "right" });
+      y += 21;
+      text(`Tax (${data.taxRate}%)`, totalLabelX, y, 10, muted);
+      text(money(data.tax), right, y, 10, ink, "bold", { align: "right" });
+      y += 12;
+      pdf.setDrawColor(207, 213, 223);
+      pdf.line(totalLabelX, y, right, y);
+      y += 21;
+      text("TOTAL DUE", totalLabelX, y, 11, ink, "bold");
+      text(money(data.total), right, y, 13, blue, "bold", { align: "right" });
+      y += 34;
+      if (data.notes) {
+        text("NOTES", left, y, 8, muted, "bold");
+        y += 16;
+        wrapped(data.notes, usableWidth, 9).forEach((part) => {
+          text(part, left, y, 9, ink);
+          y += 13;
+        });
+      }
+      if (data.footer) {
+        const footerY = Math.min(Math.max(y + 28, pageHeight - 45), pageHeight - 25);
+        text(data.footer, pageWidth / 2, footerY, 9, muted, "normal", { align: "center" });
+      }
+      pdf.save(fileName(data, "pdf"));
+    }
+
+    async function exportWord(data) {
+      if (!window.docx?.Document) throw new Error("The Word export library did not load. Check your internet connection and try again.");
+      const {
+        AlignmentType, BorderStyle, Document, Packer, Paragraph, ShadingType,
+        Table, TableCell, TableRow, TextRun, WidthType
+      } = window.docx;
+      const border = { style: BorderStyle.SINGLE, size: 1, color: "E4E7EC" };
+      const noBorders = {
+        top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+        insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }
+      };
+      const para = (value = "", options = {}) => new Paragraph({ ...options, children: options.children || [new TextRun(value)] });
+      const labelPara = (value) => new Paragraph({
+        spacing: { after: 80 },
+        children: [new TextRun({ text: value.toUpperCase(), bold: true, size: 16, color: "667085", characterSpacing: 18 })]
+      });
+      const cell = (children, width, options = {}) => new TableCell({
+        width: { size: width, type: WidthType.DXA },
+        margins: { top: 100, bottom: 100, left: 100, right: 100 },
+        borders: options.borders || noBorders,
+        ...(options.shading ? { shading: { type: ShadingType.CLEAR, fill: options.shading } } : {}),
+        children
+      });
+      const metaParagraph = (label, value) => new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 150 },
+        children: [
+          new TextRun({ text: `${label.toUpperCase()}\n`, bold: true, size: 16, color: "667085" }),
+          new TextRun({ text: value, bold: true, size: 20, color: "182230" })
+        ]
+      });
+      const sellerDetails = [
+        para(data.businessName, { spacing: { after: 70 }, children: [new TextRun({ text: data.businessName, bold: true, size: 24, color: "182230" })] }),
+        ...[data.businessEmail, data.businessPhone, ...data.businessAddress.split(/\r?\n/)]
+          .filter(Boolean).map((detail) => para(detail, { spacing: { after: 40 }, children: [new TextRun({ text: detail, size: 18, color: "667085" })] }))
+      ];
+      const headerTable = new Table({
+        width: { size: 10440, type: WidthType.DXA },
+        columnWidths: [6240, 4200],
+        borders: noBorders,
+        rows: [new TableRow({
+          children: [
+            cell([
+              new Paragraph({ spacing: { after: 240 }, children: [new TextRun({ text: "INVOICE", bold: true, size: 42, color: "3157D5" })] }),
+              ...sellerDetails
+            ], 6240),
+            cell([
+              metaParagraph("Invoice number", data.invoiceNumber),
+              metaParagraph("Issue date", formattedDate(data.issueDate)),
+              metaParagraph("Due date", formattedDate(data.dueDate))
+            ], 4200)
+          ]
+        })]
+      });
+      const billTable = new Table({
+        width: { size: 10440, type: WidthType.DXA },
+        columnWidths: [6900, 3540],
+        borders: noBorders,
+        rows: [new TableRow({
+          children: [
+            cell([
+              labelPara("Bill to"),
+              new Paragraph({ spacing: { after: 70 }, children: [new TextRun({ text: data.customerName, bold: true, size: 22, color: "182230" })] }),
+              ...[data.customerEmail, data.customerPhone, ...data.customerAddress.split(/\r?\n/)]
+                .filter(Boolean).map((detail) => para(detail, { spacing: { after: 40 }, children: [new TextRun({ text: detail, size: 18, color: "667085" })] }))
+            ], 6900),
+            cell([
+              labelPara("Currency"),
+              new Paragraph({ children: [new TextRun({ text: data.currency, bold: true, size: 22, color: "182230" })] })
+            ], 3540)
+          ]
+        })]
+      });
+
+      const itemWidths = [5700, 900, 1700, 2140];
+      const itemCell = (value, width, options = {}) => cell([
+        new Paragraph({
+          alignment: options.alignment || AlignmentType.LEFT,
+          children: [new TextRun({
+            text: String(value),
+            bold: Boolean(options.bold),
+            size: options.size || 18,
+            color: options.color || "182230"
+          })]
+        })
+      ], width, { borders: options.borders || { top: border, bottom: border, left: noBorders.left, right: noBorders.right }, shading: options.shading });
+      const itemRows = [
+        new TableRow({
+          tableHeader: true,
+          cantSplit: true,
+          children: [
+            itemCell("SERVICE DESCRIPTION", itemWidths[0], { bold: true, size: 16, color: "475467", shading: "F4F6FB", borders: noBorders }),
+            itemCell("QTY", itemWidths[1], { bold: true, size: 16, color: "475467", shading: "F4F6FB", alignment: AlignmentType.RIGHT, borders: noBorders }),
+            itemCell("RATE", itemWidths[2], { bold: true, size: 16, color: "475467", shading: "F4F6FB", alignment: AlignmentType.RIGHT, borders: noBorders }),
+            itemCell("AMOUNT", itemWidths[3], { bold: true, size: 16, color: "475467", shading: "F4F6FB", alignment: AlignmentType.RIGHT, borders: noBorders })
+          ]
+        }),
+        ...data.services.map((service) => new TableRow({
+          cantSplit: true,
+          children: [
+            itemCell(service.description, itemWidths[0]),
+            itemCell(service.quantity, itemWidths[1], { alignment: AlignmentType.RIGHT }),
+            itemCell(money(service.rate), itemWidths[2], { alignment: AlignmentType.RIGHT }),
+            itemCell(money(service.amount), itemWidths[3], { alignment: AlignmentType.RIGHT, bold: true })
+          ]
+        }))
+      ];
+      const itemsTable = new Table({
+        width: { size: 10440, type: WidthType.DXA },
+        columnWidths: itemWidths,
+        rows: itemRows
+      });
+      const totalRow = (label, value, options = {}) => new TableRow({
+        cantSplit: true,
+        children: [
+          cell([new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: label, bold: Boolean(options.bold), size: options.size || 20, color: options.color || "475467" })] })], 3000),
+          cell([new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: value, bold: true, size: options.size || 20, color: options.color || "182230" })] })], 2700)
+        ]
+      });
+      const totalsTable = new Table({
+        width: { size: 5700, type: WidthType.DXA },
+        columnWidths: [3000, 2700],
+        alignment: AlignmentType.RIGHT,
+        borders: noBorders,
+        rows: [
+          totalRow("Subtotal", money(data.subtotal)),
+          totalRow(`Tax (${data.taxRate}%)`, money(data.tax)),
+          totalRow("TOTAL DUE", money(data.total), { bold: true, size: 24, color: "3157D5" })
+        ]
+      });
+      const notesContent = data.notes
+        ? [labelPara("Notes"), para(data.notes, { spacing: { after: 120 }, children: [new TextRun({ text: data.notes, size: 18, color: "475467" })] })]
+        : [];
+      const invoiceDocument = new Document({
+        creator: data.businessName,
+        title: `Invoice ${data.invoiceNumber}`,
+        description: `Invoice ${data.invoiceNumber} for ${data.customerName}`,
+        styles: { default: { document: { run: { font: "Aptos", size: 20, color: "182230" } } } },
+        sections: [{
+          properties: {
+            page: {
+              size: { width: 12240, height: 15840 },
+              margin: { top: 720, right: 900, bottom: 720, left: 900 }
+            }
+          },
+          children: [
+            headerTable,
+            para("", { spacing: { after: 120 } }),
+            billTable,
+            para("", { spacing: { after: 220 } }),
+            itemsTable,
+            para("", { spacing: { after: 100 } }),
+            totalsTable,
+            ...notesContent,
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 420 },
+              border: { top: { style: BorderStyle.SINGLE, size: 4, color: "E4E7EC", space: 10 } },
+              children: [new TextRun({ text: data.footer, size: 18, color: "667085" })]
+            })
+          ]
+        }]
+      });
+      const blob = await Packer.toBlob(invoiceDocument);
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = window.document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = fileName(data, "docx");
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    }
+
+    function showExportError(error) {
+      console.error("Invoice export failed:", error);
+      window.alert(error instanceof Error ? error.message : "Invoice export failed. Please try again.");
+    }
+
+    document.getElementById("download-pdf").addEventListener("click", () => {
+      const data = invoiceData();
+      if (!data) return;
+      try {
+        exportPdf(data);
+      } catch (error) {
+        showExportError(error);
+      }
+    });
+    document.getElementById("download-word").addEventListener("click", async () => {
+      const data = invoiceData();
+      if (!data) return;
+      try {
+        await exportWord(data);
+      } catch (error) {
+        showExportError(error);
+      }
+    });
+
+    function updateTotals() {
+      let subtotal = 0;
+      rowsContainer.querySelectorAll(".service-row").forEach((row) => {
+        const quantity = Math.max(0, Number(row.querySelector(".quantity").value) || 0);
+        const rate = Math.max(0, Number(row.querySelector(".rate").value) || 0);
+        const lineTotal = quantity * rate;
+        subtotal += lineTotal;
+        row.querySelector(".line-total").textContent = money(lineTotal);
+      });
+
+      const taxRate = Math.min(100, Math.max(0, Number(document.getElementById("tax-rate").value) || 0));
+      const tax = subtotal * taxRate / 100;
+      document.getElementById("subtotal").textContent = money(subtotal);
+      document.getElementById("tax-amount").textContent = money(tax);
+      document.getElementById("total").textContent = money(subtotal + tax);
+    }
+
+    function addService() {
+      const row = serviceTemplate.content.firstElementChild.cloneNode(true);
+      rowsContainer.append(row);
+      row.querySelector(".description").focus();
+      updateTotals();
+    }
+
+    document.getElementById("add-service").addEventListener("click", addService);
+    document.getElementById("add-service-top").addEventListener("click", addService);
+    rowsContainer.addEventListener("input", updateTotals);
+    rowsContainer.addEventListener("click", (event) => {
+      const removeButton = event.target.closest(".remove-service");
+      if (!removeButton) return;
+      removeButton.closest(".service-row").remove();
+      if (!rowsContainer.querySelector(".service-row")) addService();
+      updateTotals();
+    });
+    document.getElementById("tax-rate").addEventListener("input", updateTotals);
+    currencySelect.addEventListener("change", updateTotals);
+
+    const today = new Date();
+    const dateInputValue = (date) => {
+      const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return localDate.toISOString().slice(0, 10);
+    };
+    document.getElementById("invoice-number").value = `INV-${today.getFullYear()}-001`;
+    document.getElementById("invoice-date").value = dateInputValue(today);
+    const dueDate = new Date(today);
+    dueDate.setDate(dueDate.getDate() + 30);
+    document.getElementById("due-date").value = dateInputValue(dueDate);
+    addService();
+  </script>
+</body>
+</html>

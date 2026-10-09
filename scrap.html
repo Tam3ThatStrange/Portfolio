@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Scrap Calculator</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; padding: 20px; background:#f7fafc; color:#111827; }
+    h1 { margin: 0 0 12px; font-size: 1.4rem; }
+    .card { background:white; border-radius:10px; box-shadow: 0 6px 18px rgba(17,24,39,0.06); padding:16px; max-width:1000px; margin:auto; }
+    table { width:100%; border-collapse: collapse; margin-top:12px; }
+    th, td { padding:8px 10px; text-align:left; border-bottom:1px solid #e6edf3; }
+    th { font-weight:600; background:#f1f5f9; }
+    input[type="number"], input[type="text"] { width:100%; box-sizing: border-box; padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; }
+    .controls { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    button { background:#0ea5a4; color:white; border:0; padding:8px 12px; border-radius:8px; cursor:pointer; }
+    button.ghost { background:transparent; color:#0f172a; border:1px solid #e2e8f0; }
+    button.danger { background:#ef4444; }
+    .right { text-align:right; }
+    .muted { color:#6b7280; font-size:0.95rem; }
+    .small { font-size:0.9rem; padding:6px 8px; }
+    .totals { display:flex; gap:12px; justify-content:flex-end; margin-top:16px; align-items:center; }
+    .big { font-size:1.25rem; font-weight:700; }
+    .action-col { width:110px; }
+    @media (max-width:640px) {
+      .action-col { width: 84px; }
+      .controls { flex-direction:column; }
+    }
+  #TypeInput{
+    width:wrap
+  }
+  </style>
+</head>
+<body>
+  <div class="card" role="main">
+    <h1>Scrap Calculator</h1>
+    <div class="muted">Enter weight (lbs) and price per lb. Line totals and grand total calculate automatically. Tare weight subtracts from total weight.</div>
+
+    <div class="controls">
+      <button id="addRowBtn">+ Add row</button>
+      <button id="addDefaultsBtn" class="ghost">Add default types</button>
+      <button id="exportCsvBtn" class="ghost">Export CSV</button>
+      <button id="clearBtn" class="ghost">Clear all</button>
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <label class="muted small" for="tare">Tare (lbs)</label>
+        <input id="tare" type="number" step="0.01" value="0" style="width:100px"/>
+      </div>
+    </div>
+
+    <table aria-label="Scrap calculator table" id="scrapTable">
+      <thead>
+        <tr>
+          <th style="width:30%;">Scrap Type</th>
+          <th style="width:18%;">Weight (lbs)</th>
+          <th style="width:18%;">Price / lb ($)</th>
+          <th style="width:18%;">Line Total ($)</th>
+          <th class="action-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- rows injected here -->
+      </tbody>
+    </table>
+
+    <div class="totals" aria-live="polite">
+      <div class="muted">Subtotal:</div>
+      <div id="subtotal" class="big">$0.00</div>
+    </div>
+
+    <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end; align-items:center;">
+      <div class="muted">Tare (lbs)</div>
+      <div id="tareDisplay" style="width:80px; text-align:right;">0.00</div>
+      <div class="muted">Adjusted Total:</div>
+      <div id="adjustedTotal" class="big">$0.00</div>
+    </div>
+
+    <template id="rowTemplate">
+      <tr>
+        <td><input class="typeInput" type="text" value=""></td>
+        <td><input class="weightInput" type="number" min="0" step="0.01" value="0"></td>
+        <td><input class="priceInput" type="number" min="0" step="0.0001" value="0"></td>
+        <td class="right lineTotal">$0.00</td>
+        <td class="action-col right"><button class="removeBtn ghost">Remove</button></td>
+      </tr>
+    </template>
+
+  </div>
+
+  <script>
+    // Utility: format as currency
+    function toCurrency(n) {
+      return n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+    }
+
+    // Add a new editable row
+    function addRow(type = '', weight = 0, price = 0) {
+      const tpl = document.getElementById('rowTemplate');
+      const clone = tpl.content.firstElementChild.cloneNode(true);
+      const typeInput = clone.querySelector('.typeInput');
+      const weightInput = clone.querySelector('.weightInput');
+      const priceInput = clone.querySelector('.priceInput');
+      const removeBtn = clone.querySelector('.removeBtn');
+      const lineTotalCell = clone.querySelector('.lineTotal');
+
+      typeInput.value = type;
+      weightInput.value = Number(weight).toFixed(2);
+      priceInput.value = Number(price);
+
+      function recalcLine() {
+        // parse numbers carefully
+        const w = parseFloat(weightInput.value) || 0;
+        const p = parseFloat(priceInput.value) || 0;
+        const line = Math.round((w * p + Number.EPSILON) * 100) / 100;
+        lineTotalCell.textContent = toCurrency(line);
+        recalcTotals();
+      }
+
+      weightInput.addEventListener('input', recalcLine);
+      priceInput.addEventListener('input', recalcLine);
+
+      removeBtn.addEventListener('click', () => {
+        clone.remove();
+        recalcTotals();
+      });
+
+      document.getElementById('tableBody').appendChild(clone);
+      recalcLine();
+    }
+
+    // Recalculate totals
+    function recalcTotals() {
+      const tbody = document.getElementById('tableBody');
+      let subtotal = 0;
+      let totalWeight = 0;
+      tbody.querySelectorAll('tr').forEach(row => {
+        const w = parseFloat(row.querySelector('.weightInput').value) || 0;
+        const p = parseFloat(row.querySelector('.priceInput').value) || 0;
+        const line = Math.round((w * p + Number.EPSILON) * 100) / 100;
+        subtotal += line;
+        totalWeight += w;
+      });
+
+      subtotal = Math.round((subtotal + Number.EPSILON) * 100) / 100;
+      document.getElementById('subtotal').textContent = toCurrency(subtotal);
+
+      const tare = parseFloat(document.getElementById('tare').value) || 0;
+      document.getElementById('tareDisplay').textContent = tare.toFixed(2);
+
+      // Option A: adjusted total subtracts value of tare assuming average price?
+      // Simpler & common: subtract tare from total weight and recompute value proportionally by average price per lb.
+      // We'll compute adjusted total by proportionally reducing weight: if totalWeight <= tare => $0
+      let adjusted = 0;
+      if (totalWeight <= 0) {
+        adjusted = 0;
+      } else {
+        const effectiveWeight = Math.max(0, totalWeight - tare);
+        // If subtotal is 0 or totalWeight==0, adjusted = 0.
+        adjusted = totalWeight > 0 ? Math.round(((subtotal * (effectiveWeight / totalWeight)) + Number.EPSILON) * 100) / 100 : 0;
+      }
+
+      document.getElementById('adjustedTotal').textContent = toCurrency(adjusted);
+    }
+
+    // Add default scrap types commonly used (editable after)
+    function addDefaults() {
+      // default choices (you can edit these prices)
+      const defaults = [
+        ['#1 Copper', 10.00, 3.25], 
+        ['#2 Copper', 5.00, 3.00] , 
+        ['#2 Copper INS' , 10, 2.5],     // weight, price/lb example
+        ['Aluminum', 12.50, 0.45],
+      ];
+      defaults.forEach(d => addRow(d[0], d[1], d[2]));
+    }
+
+    // Export CSV
+    function exportCsv() {
+      const rows = [['Type','Weight (lbs)','Price per lb','Line total']];
+      let totalWeight = 0;
+      document.getElementById('tableBody').querySelectorAll('tr').forEach(row => {
+        const t = row.querySelector('.typeInput').value || '';
+        const w = parseFloat(row.querySelector('.weightInput').value) || 0;
+        const p = parseFloat(row.querySelector('.priceInput').value) || 0;
+        const line = Math.round((w * p + Number.EPSILON) * 100) / 100;
+        rows.push([t, w.toFixed(2), p.toFixed(4), line.toFixed(2)]);
+        totalWeight += w;
+      });
+      // Add summary rows
+      const tare = parseFloat(document.getElementById('tare').value) || 0;
+      rows.push([]);
+      rows.push(['Subtotal', '', '', document.getElementById('subtotal').textContent.replace(/[^0-9\.\-]/g,'')]);
+      rows.push(['Tare (lbs)', tare.toFixed(2)]);
+      rows.push(['Adjusted Total', '', '', document.getElementById('adjustedTotal').textContent.replace(/[^0-9\.\-]/g,'')]);
+
+      const csvContent = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'scrap_calculator.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // Clear all rows
+    function clearAll() {
+      document.getElementById('tableBody').innerHTML = '';
+      recalcTotals();
+    }
+
+    // Wire up controls
+    document.getElementById('addRowBtn').addEventListener('click', () => addRow());
+    document.getElementById('addDefaultsBtn').addEventListener('click', addDefaults);
+    document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (confirm('Clear all rows?')) clearAll();
+    });
+    document.getElementById('tare').addEventListener('input', recalcTotals);
+
+    // start with some defaults
+    addDefaults();
+    recalcTotals();
+  </script>
+</body>
+</html>
